@@ -133,21 +133,37 @@ count_row = len(df[df['Status'] == False])
 skipped_count = len(df[df['Status'] == True])
 data = df.to_dict(orient='records')
 failedToSend = 0
-
+skippedSendingArray = []
+failedToSendArray = []
 if yes_or_no("Do you wish to send %d email(s) and skip %d email(s)? (y/n): " % (count_row, skipped_count)):
     pbar = tqdm(total=count_row, file=sys.stdout, unit=" emails")
     for row in data:
         if row['Status'] == True:
+            skippedSendingArray.append(row)
             continue
         try:
             send_mail(row)
             pbar.update(1)
         except:
             failedToSend +=1
+            failedToSendArray.append(row)
     pbar.close()
     df.to_csv(index=False)
-    print("\nSkipped %d row(s) [Hint: You may skip lines with the \"Status\" column with a value of True]" % skipped_count)
-    print("Failed to send %d email(s) [Note: this is only inital sending errors, this does not include the recipient(s) email server rejecting the email or anythig similar.]" % failedToSend)
+    if skippedSendingArray:
+        print("\nSkipped %d row(s) [Hint: You may skip lines with the \"Status\" column with a value of True]" % skipped_count)
+        for x in skippedSendingArray:
+            print(x)
+    if not skippedSendingArray:
+        print("\nDid not skip any addresses.")
+    
+    if failedToSendArray:
+        print("\nFailed to send %d email(s) to:" % failedToSend)
+        for x in failedToSendArray:
+            print(x)
+        print("\n[Note: this is only inital sending errors, this does not include the recipient(s) email server rejecting the email or anythig similar.]")
+    if not failedToSendArray:
+        print("\nSuccessfully sent to all addresses.")
+
     pbar.close()
 else:
     print("Exit")
